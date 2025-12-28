@@ -17,6 +17,13 @@ var Typography = require('@material-ui/core/Typography');
 var Box = require('@material-ui/core/Box');
 var Chip = require('@material-ui/core/Chip');
 var VideogameAssetIcon = require('@material-ui/icons/VideogameAsset');
+var Dialog = require('@material-ui/core/Dialog');
+var DialogTitle = require('@material-ui/core/DialogTitle');
+var DialogContent = require('@material-ui/core/DialogContent');
+var DialogActions = require('@material-ui/core/DialogActions');
+var List = require('@material-ui/core/List');
+var ListItem = require('@material-ui/core/ListItem');
+var ListItemText = require('@material-ui/core/ListItemText');
 
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
@@ -37,6 +44,13 @@ var Typography__default = /*#__PURE__*/_interopDefaultLegacy(Typography);
 var Box__default = /*#__PURE__*/_interopDefaultLegacy(Box);
 var Chip__default = /*#__PURE__*/_interopDefaultLegacy(Chip);
 var VideogameAssetIcon__default = /*#__PURE__*/_interopDefaultLegacy(VideogameAssetIcon);
+var Dialog__default = /*#__PURE__*/_interopDefaultLegacy(Dialog);
+var DialogTitle__default = /*#__PURE__*/_interopDefaultLegacy(DialogTitle);
+var DialogContent__default = /*#__PURE__*/_interopDefaultLegacy(DialogContent);
+var DialogActions__default = /*#__PURE__*/_interopDefaultLegacy(DialogActions);
+var List__default = /*#__PURE__*/_interopDefaultLegacy(List);
+var ListItem__default = /*#__PURE__*/_interopDefaultLegacy(ListItem);
+var ListItemText__default = /*#__PURE__*/_interopDefaultLegacy(ListItemText);
 
 function _typeof(o) {
   "@babel/helpers - typeof";
@@ -527,17 +541,92 @@ var TabContent = /*#__PURE__*/function (_Component) {
     var _this;
     _classCallCheck(this, TabContent);
     _this = _callSuper(this, TabContent, [props]);
-    _defineProperty(_this, "handleAuthenticate", /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee() {
-      var _yield$_this$props$ip, _yield$_this$props$ip2, err;
+    _defineProperty(_this, "handleStartOAuth", /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee() {
+      var _yield$_this$props$ip, _yield$_this$props$ip2, err, result;
       return regenerator.wrap(function (_context) {
         while (1) switch (_context.prev = _context.next) {
           case 0:
+            _this.showSnackbar('info', 'Opening Nintendo login window...');
             _context.next = 1;
-            return _this.props.ipc.invoke('authenticateNintendo', _this.state.sessionToken);
+            return _this.props.ipc.invoke('startOAuth');
           case 1:
             _yield$_this$props$ip = _context.sent;
-            _yield$_this$props$ip2 = _slicedToArray(_yield$_this$props$ip, 1);
+            _yield$_this$props$ip2 = _slicedToArray(_yield$_this$props$ip, 2);
             err = _yield$_this$props$ip2[0];
+            result = _yield$_this$props$ip2[1];
+            if (!err) {
+              _context.next = 2;
+              break;
+            }
+            _this.showSnackbar('error', "Login failed: ".concat(err.message));
+            return _context.abrupt("return");
+          case 2:
+            if (result.needsSelection) {
+              // Multiple accounts - show selection dialog
+              _this.setState({
+                accountSelectionDialog: true,
+                accounts: result.accounts,
+                oauthState: result.state,
+                oauthVerifier: result.verifier
+              });
+            } else {
+              // Success - single account
+              _this.showSnackbar('success', 'Authenticated! Discovering devices...');
+              _this.handleDiscover();
+            }
+          case 3:
+          case "end":
+            return _context.stop();
+        }
+      }, _callee);
+    })));
+    _defineProperty(_this, "handleSelectAccount", /*#__PURE__*/function () {
+      var _ref2 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee2(account) {
+        var _yield$_this$props$ip3, _yield$_this$props$ip4, err;
+        return regenerator.wrap(function (_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
+            case 0:
+              _this.setState({
+                accountSelectionDialog: false
+              });
+              _this.showSnackbar('info', "Selecting ".concat(account.name, "..."));
+              _context2.next = 1;
+              return _this.props.ipc.invoke('selectAccount', {
+                accountHref: account.href,
+                state: _this.state.oauthState,
+                verifier: _this.state.oauthVerifier
+              });
+            case 1:
+              _yield$_this$props$ip3 = _context2.sent;
+              _yield$_this$props$ip4 = _slicedToArray(_yield$_this$props$ip3, 1);
+              err = _yield$_this$props$ip4[0];
+              if (err) {
+                _this.showSnackbar('error', "Selection failed: ".concat(err.message));
+              } else {
+                _this.showSnackbar('success', 'Authenticated! Discovering devices...');
+                _this.handleDiscover();
+              }
+            case 2:
+            case "end":
+              return _context2.stop();
+          }
+        }, _callee2);
+      }));
+      return function (_x) {
+        return _ref2.apply(this, arguments);
+      };
+    }());
+    _defineProperty(_this, "handleAuthenticate", /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee3() {
+      var _yield$_this$props$ip5, _yield$_this$props$ip6, err;
+      return regenerator.wrap(function (_context3) {
+        while (1) switch (_context3.prev = _context3.next) {
+          case 0:
+            _context3.next = 1;
+            return _this.props.ipc.invoke('authenticateNintendo', _this.state.sessionToken);
+          case 1:
+            _yield$_this$props$ip5 = _context3.sent;
+            _yield$_this$props$ip6 = _slicedToArray(_yield$_this$props$ip5, 1);
+            err = _yield$_this$props$ip6[0];
             if (err) {
               _this.showSnackbar('error', "Authentication failed: ".concat(err.message));
             } else {
@@ -546,22 +635,22 @@ var TabContent = /*#__PURE__*/function (_Component) {
             }
           case 2:
           case "end":
-            return _context.stop();
+            return _context3.stop();
         }
-      }, _callee);
+      }, _callee3);
     })));
-    _defineProperty(_this, "handleDiscover", /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee2() {
-      var _yield$_this$props$ip3, _yield$_this$props$ip4, err, result;
-      return regenerator.wrap(function (_context2) {
-        while (1) switch (_context2.prev = _context2.next) {
+    _defineProperty(_this, "handleDiscover", /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee4() {
+      var _yield$_this$props$ip7, _yield$_this$props$ip8, err, result;
+      return regenerator.wrap(function (_context4) {
+        while (1) switch (_context4.prev = _context4.next) {
           case 0:
-            _context2.next = 1;
+            _context4.next = 1;
             return _this.props.ipc.invoke('discoverDevices');
           case 1:
-            _yield$_this$props$ip3 = _context2.sent;
-            _yield$_this$props$ip4 = _slicedToArray(_yield$_this$props$ip3, 2);
-            err = _yield$_this$props$ip4[0];
-            result = _yield$_this$props$ip4[1];
+            _yield$_this$props$ip7 = _context4.sent;
+            _yield$_this$props$ip8 = _slicedToArray(_yield$_this$props$ip7, 2);
+            err = _yield$_this$props$ip8[0];
+            result = _yield$_this$props$ip8[1];
             if (err) {
               _this.showSnackbar('error', "Discovery failed: ".concat(err.message));
             } else {
@@ -569,26 +658,26 @@ var TabContent = /*#__PURE__*/function (_Component) {
             }
           case 2:
           case "end":
-            return _context2.stop();
+            return _context4.stop();
         }
-      }, _callee2);
+      }, _callee4);
     })));
     _defineProperty(_this, "handlePairChild", /*#__PURE__*/function () {
-      var _ref3 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee3(playerId, allow2ChildId) {
-        var _yield$_this$props$ip5, _yield$_this$props$ip6, err;
-        return regenerator.wrap(function (_context3) {
-          while (1) switch (_context3.prev = _context3.next) {
+      var _ref5 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee5(playerId, allow2ChildId) {
+        var _yield$_this$props$ip9, _yield$_this$props$ip0, err;
+        return regenerator.wrap(function (_context5) {
+          while (1) switch (_context5.prev = _context5.next) {
             case 0:
-              _context3.next = 1;
+              _context5.next = 1;
               return _this.props.ipc.invoke('pairChild', {
                 playerId: playerId,
                 allow2ChildId: allow2ChildId,
                 activityType: 1 // Gaming
               });
             case 1:
-              _yield$_this$props$ip5 = _context3.sent;
-              _yield$_this$props$ip6 = _slicedToArray(_yield$_this$props$ip5, 1);
-              err = _yield$_this$props$ip6[0];
+              _yield$_this$props$ip9 = _context5.sent;
+              _yield$_this$props$ip0 = _slicedToArray(_yield$_this$props$ip9, 1);
+              err = _yield$_this$props$ip0[0];
               if (err) {
                 _this.showSnackbar('error', "Pairing failed: ".concat(err.message));
               } else {
@@ -596,29 +685,29 @@ var TabContent = /*#__PURE__*/function (_Component) {
               }
             case 2:
             case "end":
-              return _context3.stop();
+              return _context5.stop();
           }
-        }, _callee3);
+        }, _callee5);
       }));
-      return function (_x, _x2) {
-        return _ref3.apply(this, arguments);
+      return function (_x2, _x3) {
+        return _ref5.apply(this, arguments);
       };
     }());
     _defineProperty(_this, "handleToggleMonitoring", /*#__PURE__*/function () {
-      var _ref4 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee4(playerId, enabled) {
-        var _yield$_this$props$ip7, _yield$_this$props$ip8, err;
-        return regenerator.wrap(function (_context4) {
-          while (1) switch (_context4.prev = _context4.next) {
+      var _ref6 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee6(playerId, enabled) {
+        var _yield$_this$props$ip1, _yield$_this$props$ip10, err;
+        return regenerator.wrap(function (_context6) {
+          while (1) switch (_context6.prev = _context6.next) {
             case 0:
-              _context4.next = 1;
+              _context6.next = 1;
               return _this.props.ipc.invoke('toggleMonitoring', {
                 playerId: playerId,
                 enabled: enabled
               });
             case 1:
-              _yield$_this$props$ip7 = _context4.sent;
-              _yield$_this$props$ip8 = _slicedToArray(_yield$_this$props$ip7, 1);
-              err = _yield$_this$props$ip8[0];
+              _yield$_this$props$ip1 = _context6.sent;
+              _yield$_this$props$ip10 = _slicedToArray(_yield$_this$props$ip1, 1);
+              err = _yield$_this$props$ip10[0];
               if (err) {
                 _this.showSnackbar('error', "Toggle failed: ".concat(err.message));
               } else {
@@ -626,26 +715,26 @@ var TabContent = /*#__PURE__*/function (_Component) {
               }
             case 2:
             case "end":
-              return _context4.stop();
+              return _context6.stop();
           }
-        }, _callee4);
+        }, _callee6);
       }));
-      return function (_x3, _x4) {
-        return _ref4.apply(this, arguments);
+      return function (_x4, _x5) {
+        return _ref6.apply(this, arguments);
       };
     }());
     _defineProperty(_this, "handleSyncNow", /*#__PURE__*/function () {
-      var _ref5 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee5(playerId) {
-        var _yield$_this$props$ip9, _yield$_this$props$ip0, err;
-        return regenerator.wrap(function (_context5) {
-          while (1) switch (_context5.prev = _context5.next) {
+      var _ref7 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee7(playerId) {
+        var _yield$_this$props$ip11, _yield$_this$props$ip12, err;
+        return regenerator.wrap(function (_context7) {
+          while (1) switch (_context7.prev = _context7.next) {
             case 0:
-              _context5.next = 1;
+              _context7.next = 1;
               return _this.props.ipc.invoke('syncNow', playerId);
             case 1:
-              _yield$_this$props$ip9 = _context5.sent;
-              _yield$_this$props$ip0 = _slicedToArray(_yield$_this$props$ip9, 1);
-              err = _yield$_this$props$ip0[0];
+              _yield$_this$props$ip11 = _context7.sent;
+              _yield$_this$props$ip12 = _slicedToArray(_yield$_this$props$ip11, 1);
+              err = _yield$_this$props$ip12[0];
               if (err) {
                 _this.showSnackbar('error', "Sync failed: ".concat(err.message));
               } else {
@@ -653,32 +742,32 @@ var TabContent = /*#__PURE__*/function (_Component) {
               }
             case 2:
             case "end":
-              return _context5.stop();
+              return _context7.stop();
           }
-        }, _callee5);
+        }, _callee7);
       }));
-      return function (_x5) {
-        return _ref5.apply(this, arguments);
+      return function (_x6) {
+        return _ref7.apply(this, arguments);
       };
     }());
     _defineProperty(_this, "handleUnpair", /*#__PURE__*/function () {
-      var _ref6 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee6(playerId) {
-        var _yield$_this$props$ip1, _yield$_this$props$ip10, err;
-        return regenerator.wrap(function (_context6) {
-          while (1) switch (_context6.prev = _context6.next) {
+      var _ref8 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee8(playerId) {
+        var _yield$_this$props$ip13, _yield$_this$props$ip14, err;
+        return regenerator.wrap(function (_context8) {
+          while (1) switch (_context8.prev = _context8.next) {
             case 0:
               if (window.confirm('Unpair this child?')) {
-                _context6.next = 1;
+                _context8.next = 1;
                 break;
               }
-              return _context6.abrupt("return");
+              return _context8.abrupt("return");
             case 1:
-              _context6.next = 2;
+              _context8.next = 2;
               return _this.props.ipc.invoke('unpairChild', playerId);
             case 2:
-              _yield$_this$props$ip1 = _context6.sent;
-              _yield$_this$props$ip10 = _slicedToArray(_yield$_this$props$ip1, 1);
-              err = _yield$_this$props$ip10[0];
+              _yield$_this$props$ip13 = _context8.sent;
+              _yield$_this$props$ip14 = _slicedToArray(_yield$_this$props$ip13, 1);
+              err = _yield$_this$props$ip14[0];
               if (err) {
                 _this.showSnackbar('error', "Unpair failed: ".concat(err.message));
               } else {
@@ -686,17 +775,21 @@ var TabContent = /*#__PURE__*/function (_Component) {
               }
             case 3:
             case "end":
-              return _context6.stop();
+              return _context8.stop();
           }
-        }, _callee6);
+        }, _callee8);
       }));
-      return function (_x6) {
-        return _ref6.apply(this, arguments);
+      return function (_x7) {
+        return _ref8.apply(this, arguments);
       };
     }());
     _this.state = {
       sessionToken: '',
-      snackbar: null
+      snackbar: null,
+      accountSelectionDialog: false,
+      accounts: [],
+      oauthState: null,
+      oauthVerifier: null
     };
     _this.setupIPCListeners();
     return _this;
@@ -765,15 +858,36 @@ var TabContent = /*#__PURE__*/function (_Component) {
         mb: 3
       }, /*#__PURE__*/React__default["default"].createElement(Typography__default["default"], {
         variant: "h6"
-      }, "Authenticate"), /*#__PURE__*/React__default["default"].createElement(Typography__default["default"], {
+      }, "Login to Nintendo Account"), /*#__PURE__*/React__default["default"].createElement(Typography__default["default"], {
         variant: "body2",
         color: "textSecondary",
         paragraph: true
-      }, "Get your session token from ", /*#__PURE__*/React__default["default"].createElement("a", {
-        href: "https://github.com/samuelthomas2774/nxapi",
-        target: "_blank",
-        rel: "noopener noreferrer"
-      }, "nxapi-cli")), /*#__PURE__*/React__default["default"].createElement(TextField__default["default"], {
+      }, "Click below to securely login with your Nintendo Account. Your credentials are never stored - only the session token."), /*#__PURE__*/React__default["default"].createElement(Button__default["default"], {
+        variant: "contained",
+        color: "primary",
+        size: "large",
+        onClick: this.handleStartOAuth,
+        startIcon: /*#__PURE__*/React__default["default"].createElement(VideogameAssetIcon__default["default"], null),
+        style: {
+          marginRight: 10
+        }
+      }, "Login with Nintendo"), /*#__PURE__*/React__default["default"].createElement(Typography__default["default"], {
+        variant: "caption",
+        color: "textSecondary",
+        display: "block",
+        style: {
+          marginTop: 10
+        }
+      }, "Advanced: Have a session token already? ", /*#__PURE__*/React__default["default"].createElement(Button__default["default"], {
+        size: "small",
+        onClick: function onClick() {
+          return _this3.setState({
+            showManualAuth: !_this3.state.showManualAuth
+          });
+        }
+      }, "Manual Login")), this.state.showManualAuth && /*#__PURE__*/React__default["default"].createElement(Box__default["default"], {
+        mt: 2
+      }, /*#__PURE__*/React__default["default"].createElement(TextField__default["default"], {
         label: "Nintendo Session Token",
         value: this.state.sessionToken,
         onChange: function onChange(e) {
@@ -783,22 +897,23 @@ var TabContent = /*#__PURE__*/function (_Component) {
         },
         fullWidth: true,
         margin: "normal",
-        type: "password"
+        type: "password",
+        helperText: "Get from npx nxapi nso token --json"
       }), /*#__PURE__*/React__default["default"].createElement(Button__default["default"], {
-        variant: "contained",
+        variant: "outlined",
         color: "primary",
         onClick: this.handleAuthenticate,
         disabled: !this.state.sessionToken
-      }, "Authenticate & Discover")), isAuthenticated && Object.keys(childPlayers || {}).length === 0 && /*#__PURE__*/React__default["default"].createElement(Box__default["default"], {
+      }, "Authenticate Manually"))), isAuthenticated && Object.keys(childPlayers || {}).length === 0 && /*#__PURE__*/React__default["default"].createElement(Box__default["default"], {
         mb: 3
       }, /*#__PURE__*/React__default["default"].createElement(Button__default["default"], {
         variant: "contained",
         color: "primary",
         onClick: this.handleDiscover
-      }, "Discover Nintendo Children")), isAuthenticated && Object.keys(childPlayers || {}).length > 0 && /*#__PURE__*/React__default["default"].createElement(Table__default["default"], null, /*#__PURE__*/React__default["default"].createElement(TableHead__default["default"], null, /*#__PURE__*/React__default["default"].createElement(TableRow__default["default"], null, /*#__PURE__*/React__default["default"].createElement(TableCell__default["default"], null, "Nintendo Child"), /*#__PURE__*/React__default["default"].createElement(TableCell__default["default"], null, "Monitor & Enforce"), /*#__PURE__*/React__default["default"].createElement(TableCell__default["default"], null, "Paired Allow2 Child"), /*#__PURE__*/React__default["default"].createElement(TableCell__default["default"], null, "Today's Play Time"), /*#__PURE__*/React__default["default"].createElement(TableCell__default["default"], null, "Status"), /*#__PURE__*/React__default["default"].createElement(TableCell__default["default"], null, "Actions"))), /*#__PURE__*/React__default["default"].createElement(TableBody__default["default"], null, Object.entries(childPlayers || {}).map(function (_ref7) {
-        var _ref8 = _slicedToArray(_ref7, 2),
-          playerId = _ref8[0],
-          player = _ref8[1];
+      }, "Discover Nintendo Children")), isAuthenticated && Object.keys(childPlayers || {}).length > 0 && /*#__PURE__*/React__default["default"].createElement(Table__default["default"], null, /*#__PURE__*/React__default["default"].createElement(TableHead__default["default"], null, /*#__PURE__*/React__default["default"].createElement(TableRow__default["default"], null, /*#__PURE__*/React__default["default"].createElement(TableCell__default["default"], null, "Nintendo Child"), /*#__PURE__*/React__default["default"].createElement(TableCell__default["default"], null, "Monitor & Enforce"), /*#__PURE__*/React__default["default"].createElement(TableCell__default["default"], null, "Paired Allow2 Child"), /*#__PURE__*/React__default["default"].createElement(TableCell__default["default"], null, "Today's Play Time"), /*#__PURE__*/React__default["default"].createElement(TableCell__default["default"], null, "Status"), /*#__PURE__*/React__default["default"].createElement(TableCell__default["default"], null, "Actions"))), /*#__PURE__*/React__default["default"].createElement(TableBody__default["default"], null, Object.entries(childPlayers || {}).map(function (_ref9) {
+        var _ref0 = _slicedToArray(_ref9, 2),
+          playerId = _ref0[0],
+          player = _ref0[1];
         var pairing = pairings[playerId];
         var allow2Child = pairing && children && children[pairing.allow2ChildId];
         return /*#__PURE__*/React__default["default"].createElement(TableRow__default["default"], {
@@ -852,7 +967,35 @@ var TabContent = /*#__PURE__*/function (_Component) {
             return _this3.handleUnpair(playerId);
           }
         }, "Unpair"))));
-      }))), this.state.snackbar && /*#__PURE__*/React__default["default"].createElement(Snackbar__default["default"], {
+      }))), /*#__PURE__*/React__default["default"].createElement(Dialog__default["default"], {
+        open: this.state.accountSelectionDialog,
+        onClose: function onClose() {
+          return _this3.setState({
+            accountSelectionDialog: false
+          });
+        }
+      }, /*#__PURE__*/React__default["default"].createElement(DialogTitle__default["default"], null, "Select Nintendo Account"), /*#__PURE__*/React__default["default"].createElement(DialogContent__default["default"], null, /*#__PURE__*/React__default["default"].createElement(Typography__default["default"], {
+        variant: "body2",
+        color: "textSecondary",
+        paragraph: true
+      }, "Multiple accounts found. Select the one with parental controls:"), /*#__PURE__*/React__default["default"].createElement(List__default["default"], null, this.state.accounts.map(function (account, idx) {
+        return /*#__PURE__*/React__default["default"].createElement(ListItem__default["default"], {
+          button: true,
+          key: idx,
+          onClick: function onClick() {
+            return _this3.handleSelectAccount(account);
+          }
+        }, /*#__PURE__*/React__default["default"].createElement(ListItemText__default["default"], {
+          primary: account.name,
+          secondary: "Click to select this account"
+        }));
+      }))), /*#__PURE__*/React__default["default"].createElement(DialogActions__default["default"], null, /*#__PURE__*/React__default["default"].createElement(Button__default["default"], {
+        onClick: function onClick() {
+          return _this3.setState({
+            accountSelectionDialog: false
+          });
+        }
+      }, "Cancel"))), this.state.snackbar && /*#__PURE__*/React__default["default"].createElement(Snackbar__default["default"], {
         open: true,
         autoHideDuration: 6000,
         onClose: function onClose() {
@@ -871,6 +1014,260 @@ var TabContent = /*#__PURE__*/function (_Component) {
     }
   }]);
 }(React.Component);
+
+// Copyright [2021] [Allow2 Pty Ltd]
+var OAuthWindowManager = /*#__PURE__*/function () {
+  function OAuthWindowManager(BrowserWindow) {
+    _classCallCheck(this, OAuthWindowManager);
+    this.BrowserWindow = BrowserWindow;
+    this.authWindow = null;
+  }
+  return _createClass(OAuthWindowManager, [{
+    key: "startOAuthFlow",
+    value: function () {
+      var _startOAuthFlow = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee3(authUrl, state, verifier, nintendoAuth) {
+        var _this = this;
+        return regenerator.wrap(function (_context3) {
+          while (1) switch (_context3.prev = _context3.next) {
+            case 0:
+              return _context3.abrupt("return", new Promise(function (resolve, reject) {
+                _this.authWindow = new _this.BrowserWindow({
+                  width: 500,
+                  height: 700,
+                  webPreferences: {
+                    nodeIntegration: false,
+                    contextIsolation: true,
+                    javascript: true
+                  },
+                  title: 'Login to Nintendo Account',
+                  autoHideMenuBar: true
+                });
+                var redirectUrl = null;
+                var accounts = [];
+                var oauthState = state;
+                var oauthVerifier = verifier;
+                _this.authWindow.webContents.on('did-finish-load', /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee() {
+                  var result, _t;
+                  return regenerator.wrap(function (_context) {
+                    while (1) switch (_context.prev = _context.next) {
+                      case 0:
+                        _context.prev = 0;
+                        _context.next = 1;
+                        return _this.authWindow.webContents.executeJavaScript("\n            (function() {\n              const buttons = Array.from(document.querySelectorAll('button, a'))\n                .filter(el => {\n                  const text = el.textContent || '';\n                  const href = el.href || el.getAttribute('href') || '';\n                  return text.includes('Select') ||\n                         text.includes('person') ||\n                         href.includes('npf54789bef');\n                });\n\n              if (buttons.length > 0) {\n                const accountData = buttons.map((btn, idx) => {\n                  const parent = btn.closest('div, li, section');\n                  const nameEl = parent ? parent.querySelector('[class*=\"name\"], [class*=\"user\"], h2, h3, strong') : null;\n                  const name = nameEl ? nameEl.textContent.trim() : 'Account ' + (idx + 1);\n                  const href = btn.href || btn.getAttribute('href') || '';\n\n                  return { name, href, element: idx };\n                });\n\n                return {\n                  found: true,\n                  accounts: accountData,\n                  count: buttons.length\n                };\n              }\n\n              return { found: false };\n            })();\n          ");
+                      case 1:
+                        result = _context.sent;
+                        if (!(result && result.found)) {
+                          _context.next = 4;
+                          break;
+                        }
+                        accounts = result.accounts;
+                        if (!(result.count === 1)) {
+                          _context.next = 3;
+                          break;
+                        }
+                        _context.next = 2;
+                        return _this.authWindow.webContents.executeJavaScript("\n                const buttons = Array.from(document.querySelectorAll('button, a'))\n                  .filter(el => {\n                    const text = el.textContent || '';\n                    const href = el.href || el.getAttribute('href') || '';\n                    return text.includes('Select') ||\n                           text.includes('person') ||\n                           href.includes('npf54789bef');\n                  });\n                if (buttons[0]) buttons[0].click();\n              ");
+                      case 2:
+                        _context.next = 4;
+                        break;
+                      case 3:
+                        _this.authWindow.close();
+                        resolve({
+                          accounts: accounts,
+                          needsSelection: true,
+                          state: oauthState,
+                          verifier: oauthVerifier
+                        });
+                      case 4:
+                        _context.next = 6;
+                        break;
+                      case 5:
+                        _context.prev = 5;
+                        _t = _context["catch"](0);
+                        console.error('Error injecting script:', _t);
+                      case 6:
+                      case "end":
+                        return _context.stop();
+                    }
+                  }, _callee, null, [[0, 5]]);
+                })));
+                _this.authWindow.webContents.on('will-redirect', function (event, url) {
+                  if (url.startsWith('npf54789befb391a838://auth')) {
+                    event.preventDefault();
+                    redirectUrl = url;
+                    _this.authWindow.close();
+                  }
+                });
+                _this.authWindow.webContents.on('did-navigate', function (event, url) {
+                  if (url.startsWith('npf54789befb391a838://auth')) {
+                    redirectUrl = url;
+                    _this.authWindow.close();
+                  }
+                });
+                _this.authWindow.on('closed', /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee2() {
+                  var params, sessionToken, _t2;
+                  return regenerator.wrap(function (_context2) {
+                    while (1) switch (_context2.prev = _context2.next) {
+                      case 0:
+                        _this.authWindow = null;
+                        if (!redirectUrl) {
+                          _context2.next = 6;
+                          break;
+                        }
+                        _context2.prev = 1;
+                        params = _this.parseRedirectUrl(redirectUrl);
+                        if (!(params.state !== state)) {
+                          _context2.next = 2;
+                          break;
+                        }
+                        reject(new Error('Invalid state parameter'));
+                        return _context2.abrupt("return");
+                      case 2:
+                        _context2.next = 3;
+                        return nintendoAuth.exchangeCodeForSessionToken(params.session_token_code, verifier);
+                      case 3:
+                        sessionToken = _context2.sent;
+                        resolve({
+                          sessionToken: sessionToken
+                        });
+                        _context2.next = 5;
+                        break;
+                      case 4:
+                        _context2.prev = 4;
+                        _t2 = _context2["catch"](1);
+                        reject(_t2);
+                      case 5:
+                        _context2.next = 7;
+                        break;
+                      case 6:
+                        if (accounts.length === 0) {
+                          reject(new Error('OAuth flow cancelled or failed'));
+                        }
+                      case 7:
+                      case "end":
+                        return _context2.stop();
+                    }
+                  }, _callee2, null, [[1, 4]]);
+                })));
+                _this.authWindow.loadURL(authUrl);
+              }));
+            case 1:
+            case "end":
+              return _context3.stop();
+          }
+        }, _callee3);
+      }));
+      function startOAuthFlow(_x, _x2, _x3, _x4) {
+        return _startOAuthFlow.apply(this, arguments);
+      }
+      return startOAuthFlow;
+    }()
+  }, {
+    key: "selectAccount",
+    value: function () {
+      var _selectAccount = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee5(accountHref, state, verifier, nintendoAuth) {
+        var _this2 = this;
+        return regenerator.wrap(function (_context5) {
+          while (1) switch (_context5.prev = _context5.next) {
+            case 0:
+              return _context5.abrupt("return", new Promise(function (resolve, reject) {
+                _this2.authWindow = new _this2.BrowserWindow({
+                  width: 500,
+                  height: 700,
+                  show: false,
+                  webPreferences: {
+                    nodeIntegration: false,
+                    contextIsolation: true
+                  }
+                });
+                var redirectUrl = null;
+                _this2.authWindow.webContents.on('will-redirect', function (event, url) {
+                  if (url.startsWith('npf54789befb391a838://auth')) {
+                    event.preventDefault();
+                    redirectUrl = url;
+                    _this2.authWindow.close();
+                  }
+                });
+                _this2.authWindow.webContents.on('did-navigate', function (event, url) {
+                  if (url.startsWith('npf54789befb391a838://auth')) {
+                    redirectUrl = url;
+                    _this2.authWindow.close();
+                  }
+                });
+                _this2.authWindow.on('closed', /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee4() {
+                  var params, sessionToken, _t3;
+                  return regenerator.wrap(function (_context4) {
+                    while (1) switch (_context4.prev = _context4.next) {
+                      case 0:
+                        _this2.authWindow = null;
+                        if (!redirectUrl) {
+                          _context4.next = 5;
+                          break;
+                        }
+                        _context4.prev = 1;
+                        params = _this2.parseRedirectUrl(redirectUrl);
+                        _context4.next = 2;
+                        return nintendoAuth.exchangeCodeForSessionToken(params.session_token_code, verifier);
+                      case 2:
+                        sessionToken = _context4.sent;
+                        resolve({
+                          sessionToken: sessionToken
+                        });
+                        _context4.next = 4;
+                        break;
+                      case 3:
+                        _context4.prev = 3;
+                        _t3 = _context4["catch"](1);
+                        reject(_t3);
+                      case 4:
+                        _context4.next = 6;
+                        break;
+                      case 5:
+                        reject(new Error('Account selection failed'));
+                      case 6:
+                      case "end":
+                        return _context4.stop();
+                    }
+                  }, _callee4, null, [[1, 3]]);
+                })));
+                _this2.authWindow.loadURL(accountHref);
+              }));
+            case 1:
+            case "end":
+              return _context5.stop();
+          }
+        }, _callee5);
+      }));
+      function selectAccount(_x5, _x6, _x7, _x8) {
+        return _selectAccount.apply(this, arguments);
+      }
+      return selectAccount;
+    }()
+  }, {
+    key: "parseRedirectUrl",
+    value: function parseRedirectUrl(url) {
+      var hash = url.split('#')[1];
+      if (!hash) throw new Error('No hash in redirect URL');
+      var params = {};
+      hash.split('&').forEach(function (pair) {
+        var _pair$split = pair.split('='),
+          _pair$split2 = _slicedToArray(_pair$split, 2),
+          key = _pair$split2[0],
+          value = _pair$split2[1];
+        params[key] = decodeURIComponent(value);
+      });
+      return params;
+    }
+  }, {
+    key: "close",
+    value: function close() {
+      if (this.authWindow) {
+        this.authWindow.close();
+        this.authWindow = null;
+      }
+    }
+  }]);
+}();
 
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
@@ -891,6 +1288,7 @@ function plugin(context) {
   var api = null;
   var deviceManager = null;
   var playTimeMonitor = null;
+  var oauthManager = null;
   nintendo.onLoad = function (loadState) {
     console.log('Nintendo Switch plugin loading...');
     state = loadState || {
@@ -914,6 +1312,7 @@ function plugin(context) {
     api = new NintendoParentalAPI(auth);
     deviceManager = new DeviceManager(api);
     playTimeMonitor = new PlayTimeMonitor(api);
+    oauthManager = new OAuthWindowManager(context.BrowserWindow);
 
     // Setup monitoring events
     playTimeMonitor.on('playTimeIncreased', /*#__PURE__*/function () {
@@ -1002,122 +1401,221 @@ function plugin(context) {
     }
   };
   nintendo.onUnload = function (callback) {
-    var _playTimeMonitor;
+    var _oauthManager, _playTimeMonitor;
+    (_oauthManager = oauthManager) === null || _oauthManager === void 0 || _oauthManager.close();
     (_playTimeMonitor = playTimeMonitor) === null || _playTimeMonitor === void 0 || _playTimeMonitor.cleanup();
     callback(null);
   };
   function setupIPCHandlers(context) {
-    // Authenticate
-    context.ipcMain.handle('authenticateNintendo', /*#__PURE__*/function () {
-      var _ref6 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee2(event, sessionToken) {
-        var _t2;
+    // Start OAuth flow
+    context.ipcMain.handle('startOAuth', /*#__PURE__*/function () {
+      var _ref6 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee2(event) {
+        var _auth$generateAuthUrl, authUrl, oauthState, verifier, result, _t2;
         return regenerator.wrap(function (_context2) {
           while (1) switch (_context2.prev = _context2.next) {
             case 0:
               _context2.prev = 0;
-              auth.setSessionToken(sessionToken);
+              // Generate OAuth URL with PKCE
+              _auth$generateAuthUrl = auth.generateAuthUrl(), authUrl = _auth$generateAuthUrl.authUrl, oauthState = _auth$generateAuthUrl.state, verifier = _auth$generateAuthUrl.verifier; // Open browser and handle flow
               _context2.next = 1;
+              return oauthManager.startOAuthFlow(authUrl, oauthState, verifier, auth);
+            case 1:
+              result = _context2.sent;
+              if (!result.needsSelection) {
+                _context2.next = 2;
+                break;
+              }
+              return _context2.abrupt("return", [null, {
+                needsSelection: true,
+                accounts: result.accounts,
+                state: result.state,
+                verifier: result.verifier
+              }]);
+            case 2:
+              // Single account or selection complete - save token
+              state.auth = {
+                sessionToken: result.sessionToken
+              };
+              context.configurationUpdate(state);
+
+              // Authenticate
+              _context2.next = 3;
+              return auth.authenticate();
+            case 3:
+              return _context2.abrupt("return", [null, {
+                success: true,
+                sessionToken: result.sessionToken
+              }]);
+            case 4:
+              _context2.next = 6;
+              break;
+            case 5:
+              _context2.prev = 5;
+              _t2 = _context2["catch"](0);
+              return _context2.abrupt("return", [_t2]);
+            case 6:
+            case "end":
+              return _context2.stop();
+          }
+        }, _callee2, null, [[0, 5]]);
+      }));
+      return function (_x2) {
+        return _ref6.apply(this, arguments);
+      };
+    }());
+
+    // Handle account selection (multiple accounts case)
+    context.ipcMain.handle('selectAccount', /*#__PURE__*/function () {
+      var _ref8 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee3(event, _ref7) {
+        var accountHref, oauthState, verifier, result, _t3;
+        return regenerator.wrap(function (_context3) {
+          while (1) switch (_context3.prev = _context3.next) {
+            case 0:
+              accountHref = _ref7.accountHref, oauthState = _ref7.state, verifier = _ref7.verifier;
+              _context3.prev = 1;
+              _context3.next = 2;
+              return oauthManager.selectAccount(accountHref, oauthState, verifier, auth);
+            case 2:
+              result = _context3.sent;
+              // Save session token
+              state.auth = {
+                sessionToken: result.sessionToken
+              };
+              context.configurationUpdate(state);
+
+              // Authenticate
+              _context3.next = 3;
+              return auth.authenticate();
+            case 3:
+              return _context3.abrupt("return", [null, {
+                success: true
+              }]);
+            case 4:
+              _context3.prev = 4;
+              _t3 = _context3["catch"](1);
+              return _context3.abrupt("return", [_t3]);
+            case 5:
+            case "end":
+              return _context3.stop();
+          }
+        }, _callee3, null, [[1, 4]]);
+      }));
+      return function (_x3, _x4) {
+        return _ref8.apply(this, arguments);
+      };
+    }());
+
+    // Authenticate (legacy - keep for backward compatibility)
+    context.ipcMain.handle('authenticateNintendo', /*#__PURE__*/function () {
+      var _ref9 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee4(event, sessionToken) {
+        var _t4;
+        return regenerator.wrap(function (_context4) {
+          while (1) switch (_context4.prev = _context4.next) {
+            case 0:
+              _context4.prev = 0;
+              auth.setSessionToken(sessionToken);
+              _context4.next = 1;
               return auth.authenticate();
             case 1:
               state.auth = {
                 sessionToken: sessionToken
               };
               context.configurationUpdate(state);
-              return _context2.abrupt("return", [null, {
+              return _context4.abrupt("return", [null, {
                 success: true
               }]);
             case 2:
-              _context2.prev = 2;
-              _t2 = _context2["catch"](0);
-              return _context2.abrupt("return", [_t2]);
+              _context4.prev = 2;
+              _t4 = _context4["catch"](0);
+              return _context4.abrupt("return", [_t4]);
             case 3:
             case "end":
-              return _context2.stop();
+              return _context4.stop();
           }
-        }, _callee2, null, [[0, 2]]);
+        }, _callee4, null, [[0, 2]]);
       }));
-      return function (_x2, _x3) {
-        return _ref6.apply(this, arguments);
+      return function (_x5, _x6) {
+        return _ref9.apply(this, arguments);
       };
     }());
 
     // Discover devices and children
     context.ipcMain.handle('discoverDevices', /*#__PURE__*/function () {
-      var _ref7 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee3(event) {
-        var devices, childPlayers, _iterator, _step, device, players, _t3, _t4;
-        return regenerator.wrap(function (_context3) {
-          while (1) switch (_context3.prev = _context3.next) {
+      var _ref0 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee5(event) {
+        var devices, childPlayers, _iterator, _step, device, players, _t5, _t6;
+        return regenerator.wrap(function (_context5) {
+          while (1) switch (_context5.prev = _context5.next) {
             case 0:
-              _context3.prev = 0;
-              _context3.next = 1;
+              _context5.prev = 0;
+              _context5.next = 1;
               return deviceManager.discover();
             case 1:
-              devices = _context3.sent;
+              devices = _context5.sent;
               childPlayers = {};
               _iterator = _createForOfIteratorHelper(devices);
-              _context3.prev = 2;
+              _context5.prev = 2;
               _iterator.s();
             case 3:
               if ((_step = _iterator.n()).done) {
-                _context3.next = 6;
+                _context5.next = 6;
                 break;
               }
               device = _step.value;
-              _context3.next = 4;
+              _context5.next = 4;
               return deviceManager.getChildPlayers(device.deviceId);
             case 4:
-              players = _context3.sent;
+              players = _context5.sent;
               players.forEach(function (player) {
                 childPlayers[player.playerId] = player;
               });
             case 5:
-              _context3.next = 3;
+              _context5.next = 3;
               break;
             case 6:
-              _context3.next = 8;
+              _context5.next = 8;
               break;
             case 7:
-              _context3.prev = 7;
-              _t3 = _context3["catch"](2);
-              _iterator.e(_t3);
+              _context5.prev = 7;
+              _t5 = _context5["catch"](2);
+              _iterator.e(_t5);
             case 8:
-              _context3.prev = 8;
+              _context5.prev = 8;
               _iterator.f();
-              return _context3.finish(8);
+              return _context5.finish(8);
             case 9:
               state.devices = devices.reduce(function (acc, d) {
                 return _objectSpread(_objectSpread({}, acc), {}, _defineProperty({}, d.deviceId, d));
               }, {});
               state.childPlayers = childPlayers;
               context.configurationUpdate(state);
-              return _context3.abrupt("return", [null, {
+              return _context5.abrupt("return", [null, {
                 devices: devices,
                 childPlayers: childPlayers
               }]);
             case 10:
-              _context3.prev = 10;
-              _t4 = _context3["catch"](0);
-              return _context3.abrupt("return", [_t4]);
+              _context5.prev = 10;
+              _t6 = _context5["catch"](0);
+              return _context5.abrupt("return", [_t6]);
             case 11:
             case "end":
-              return _context3.stop();
+              return _context5.stop();
           }
-        }, _callee3, null, [[0, 10], [2, 7, 8, 9]]);
+        }, _callee5, null, [[0, 10], [2, 7, 8, 9]]);
       }));
-      return function (_x4) {
-        return _ref7.apply(this, arguments);
+      return function (_x7) {
+        return _ref0.apply(this, arguments);
       };
     }());
 
     // Pair child
     context.ipcMain.handle('pairChild', /*#__PURE__*/function () {
-      var _ref9 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee4(event, _ref8) {
-        var playerId, allow2ChildId, activityType, player, pairing, _t5;
-        return regenerator.wrap(function (_context4) {
-          while (1) switch (_context4.prev = _context4.next) {
+      var _ref10 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee6(event, _ref1) {
+        var playerId, allow2ChildId, activityType, player, pairing, _t7;
+        return regenerator.wrap(function (_context6) {
+          while (1) switch (_context6.prev = _context6.next) {
             case 0:
-              playerId = _ref8.playerId, allow2ChildId = _ref8.allow2ChildId, activityType = _ref8.activityType;
-              _context4.prev = 1;
+              playerId = _ref1.playerId, allow2ChildId = _ref1.allow2ChildId, activityType = _ref1.activityType;
+              _context6.prev = 1;
               player = state.childPlayers[playerId];
               pairing = {
                 allow2ChildId: allow2ChildId,
@@ -1128,38 +1626,38 @@ function plugin(context) {
               state.pairings[playerId] = pairing;
               context.configurationUpdate(state);
               playTimeMonitor.startMonitoring(player.deviceId, state.settings.pollInterval);
-              return _context4.abrupt("return", [null, {
+              return _context6.abrupt("return", [null, {
                 success: true
               }]);
             case 2:
-              _context4.prev = 2;
-              _t5 = _context4["catch"](1);
-              return _context4.abrupt("return", [_t5]);
+              _context6.prev = 2;
+              _t7 = _context6["catch"](1);
+              return _context6.abrupt("return", [_t7]);
             case 3:
             case "end":
-              return _context4.stop();
+              return _context6.stop();
           }
-        }, _callee4, null, [[1, 2]]);
+        }, _callee6, null, [[1, 2]]);
       }));
-      return function (_x5, _x6) {
-        return _ref9.apply(this, arguments);
+      return function (_x8, _x9) {
+        return _ref10.apply(this, arguments);
       };
     }());
 
     // Toggle monitoring
     context.ipcMain.handle('toggleMonitoring', /*#__PURE__*/function () {
-      var _ref1 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee5(event, _ref0) {
-        var playerId, enabled, pairing, child, quota, _t6;
-        return regenerator.wrap(function (_context5) {
-          while (1) switch (_context5.prev = _context5.next) {
+      var _ref12 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee7(event, _ref11) {
+        var playerId, enabled, pairing, child, quota, _t8;
+        return regenerator.wrap(function (_context7) {
+          while (1) switch (_context7.prev = _context7.next) {
             case 0:
-              playerId = _ref0.playerId, enabled = _ref0.enabled;
-              _context5.prev = 1;
+              playerId = _ref11.playerId, enabled = _ref11.enabled;
+              _context7.prev = 1;
               state.pairings[playerId].enabled = enabled;
               context.configurationUpdate(state);
               pairing = state.pairings[playerId];
               if (!enabled) {
-                _context5.next = 3;
+                _context7.next = 3;
                 break;
               }
               playTimeMonitor.startMonitoring(pairing.deviceId, state.settings.pollInterval);
@@ -1168,92 +1666,92 @@ function plugin(context) {
               child = context.allow2.getChild(pairing.allow2ChildId);
               quota = child.activities[pairing.activityType];
               if (!(quota && quota.timeRemaining > 0)) {
-                _context5.next = 2;
+                _context7.next = 2;
                 break;
               }
-              _context5.next = 2;
+              _context7.next = 2;
               return deviceManager.enableGaming(pairing.deviceId, quota.timeRemaining);
             case 2:
-              _context5.next = 4;
+              _context7.next = 4;
               break;
             case 3:
               playTimeMonitor.stopMonitoring(pairing.deviceId);
             case 4:
-              return _context5.abrupt("return", [null, {
+              return _context7.abrupt("return", [null, {
                 success: true
               }]);
             case 5:
-              _context5.prev = 5;
-              _t6 = _context5["catch"](1);
-              return _context5.abrupt("return", [_t6]);
+              _context7.prev = 5;
+              _t8 = _context7["catch"](1);
+              return _context7.abrupt("return", [_t8]);
             case 6:
             case "end":
-              return _context5.stop();
+              return _context7.stop();
           }
-        }, _callee5, null, [[1, 5]]);
+        }, _callee7, null, [[1, 5]]);
       }));
-      return function (_x7, _x8) {
-        return _ref1.apply(this, arguments);
+      return function (_x0, _x1) {
+        return _ref12.apply(this, arguments);
       };
     }());
 
     // Manual sync
     context.ipcMain.handle('syncNow', /*#__PURE__*/function () {
-      var _ref10 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee6(event, playerId) {
-        var pairing, _t7;
-        return regenerator.wrap(function (_context6) {
-          while (1) switch (_context6.prev = _context6.next) {
+      var _ref13 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee8(event, playerId) {
+        var pairing, _t9;
+        return regenerator.wrap(function (_context8) {
+          while (1) switch (_context8.prev = _context8.next) {
             case 0:
-              _context6.prev = 0;
+              _context8.prev = 0;
               pairing = state.pairings[playerId];
-              _context6.next = 1;
+              _context8.next = 1;
               return playTimeMonitor.poll(pairing.deviceId);
             case 1:
-              return _context6.abrupt("return", [null, {
+              return _context8.abrupt("return", [null, {
                 success: true
               }]);
             case 2:
-              _context6.prev = 2;
-              _t7 = _context6["catch"](0);
-              return _context6.abrupt("return", [_t7]);
+              _context8.prev = 2;
+              _t9 = _context8["catch"](0);
+              return _context8.abrupt("return", [_t9]);
             case 3:
             case "end":
-              return _context6.stop();
+              return _context8.stop();
           }
-        }, _callee6, null, [[0, 2]]);
+        }, _callee8, null, [[0, 2]]);
       }));
-      return function (_x9, _x0) {
-        return _ref10.apply(this, arguments);
+      return function (_x10, _x11) {
+        return _ref13.apply(this, arguments);
       };
     }());
 
     // Unpair
     context.ipcMain.handle('unpairChild', /*#__PURE__*/function () {
-      var _ref11 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee7(event, playerId) {
-        var pairing, _t8;
-        return regenerator.wrap(function (_context7) {
-          while (1) switch (_context7.prev = _context7.next) {
+      var _ref14 = _asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee9(event, playerId) {
+        var pairing, _t0;
+        return regenerator.wrap(function (_context9) {
+          while (1) switch (_context9.prev = _context9.next) {
             case 0:
-              _context7.prev = 0;
+              _context9.prev = 0;
               pairing = state.pairings[playerId];
               playTimeMonitor.stopMonitoring(pairing.deviceId);
               delete state.pairings[playerId];
               context.configurationUpdate(state);
-              return _context7.abrupt("return", [null, {
+              return _context9.abrupt("return", [null, {
                 success: true
               }]);
             case 1:
-              _context7.prev = 1;
-              _t8 = _context7["catch"](0);
-              return _context7.abrupt("return", [_t8]);
+              _context9.prev = 1;
+              _t0 = _context9["catch"](0);
+              return _context9.abrupt("return", [_t0]);
             case 2:
             case "end":
-              return _context7.stop();
+              return _context9.stop();
           }
-        }, _callee7, null, [[0, 1]]);
+        }, _callee9, null, [[0, 1]]);
       }));
-      return function (_x1, _x10) {
-        return _ref11.apply(this, arguments);
+      return function (_x12, _x13) {
+        return _ref14.apply(this, arguments);
       };
     }());
   }

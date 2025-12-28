@@ -1,6 +1,6 @@
 {
   "name": "@allow2/allow2automate-nintendo-switch",
-  "shortName": "nintendo-switch",
+  "shortName": "Nintendo Switch",
   "version": "1.0.0",
   "description": "Monitor Nintendo Switch gaming time and sync with Allow2 parental controls",
   "main": "dist/index.js",

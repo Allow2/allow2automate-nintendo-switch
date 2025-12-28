@@ -1,4 +1,5 @@
 import TabContent from './Components/TabContent';
+import { OAuthWindowManager } from './OAuthWindowManager';
 
 // Use CommonJS build to avoid ES module issues with axios
 const {
@@ -15,6 +16,7 @@ function plugin(context) {
   let api = null;
   let deviceManager = null;
   let playTimeMonitor = null;
+  let oauthManager = null;
 
   nintendo.onLoad = function(loadState) {
     console.log('Nintendo Switch plugin loading...');
@@ -36,6 +38,7 @@ function plugin(context) {
     api = new NintendoParentalAPI(auth);
     deviceManager = new DeviceManager(api);
     playTimeMonitor = new PlayTimeMonitor(api);
+    oauthManager = new OAuthWindowManager(context.BrowserWindow);
 
     // Setup monitoring events
     playTimeMonitor.on('playTimeIncreased', async (data) => {
@@ -104,12 +107,58 @@ function plugin(context) {
   };
 
   nintendo.onUnload = function(callback) {
+    oauthManager?.close();
     playTimeMonitor?.cleanup();
     callback(null);
   };
 
   function setupIPCHandlers(context) {
-    // Authenticate
+    // Start OAuth flow
+    context.ipcMain.handle('startOAuth', async (event) => {
+      try {
+        // Generate OAuth URL with PKCE
+        const { authUrl, state: oauthState, verifier } = auth.generateAuthUrl();
+
+        // Open browser and handle flow
+        const result = await oauthManager.startOAuthFlow(authUrl, oauthState, verifier, auth);
+
+        if (result.needsSelection) {
+          // Multiple accounts - return to renderer for selection
+          return [null, { needsSelection: true, accounts: result.accounts, state: result.state, verifier: result.verifier }];
+        } else {
+          // Single account or selection complete - save token
+          state.auth = { sessionToken: result.sessionToken };
+          context.configurationUpdate(state);
+
+          // Authenticate
+          await auth.authenticate();
+
+          return [null, { success: true, sessionToken: result.sessionToken }];
+        }
+      } catch (error) {
+        return [error];
+      }
+    });
+
+    // Handle account selection (multiple accounts case)
+    context.ipcMain.handle('selectAccount', async (event, { accountHref, state: oauthState, verifier }) => {
+      try {
+        const result = await oauthManager.selectAccount(accountHref, oauthState, verifier, auth);
+
+        // Save session token
+        state.auth = { sessionToken: result.sessionToken };
+        context.configurationUpdate(state);
+
+        // Authenticate
+        await auth.authenticate();
+
+        return [null, { success: true }];
+      } catch (error) {
+        return [error];
+      }
+    });
+
+    // Authenticate (legacy - keep for backward compatibility)
     context.ipcMain.handle('authenticateNintendo', async (event, sessionToken) => {
       try {
         auth.setSessionToken(sessionToken);

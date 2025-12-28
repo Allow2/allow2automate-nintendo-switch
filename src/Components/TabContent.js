@@ -15,6 +15,13 @@ import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
 import Chip from '@material-ui/core/Chip';
 import VideogameAssetIcon from '@material-ui/icons/VideogameAsset';
+import Dialog from '@material-ui/core/Dialog';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogActions from '@material-ui/core/DialogActions';
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemText from '@material-ui/core/ListItemText';
 
 class TabContent extends Component {
   constructor(props) {
@@ -22,7 +29,11 @@ class TabContent extends Component {
 
     this.state = {
       sessionToken: '',
-      snackbar: null
+      snackbar: null,
+      accountSelectionDialog: false,
+      accounts: [],
+      oauthState: null,
+      oauthVerifier: null
     };
 
     this.setupIPCListeners();
@@ -43,6 +54,49 @@ class TabContent extends Component {
   showSnackbar(severity, message) {
     this.setState({ snackbar: { severity, message } });
   }
+
+  handleStartOAuth = async () => {
+    this.showSnackbar('info', 'Opening Nintendo login window...');
+
+    const [err, result] = await this.props.ipc.invoke('startOAuth');
+
+    if (err) {
+      this.showSnackbar('error', `Login failed: ${err.message}`);
+      return;
+    }
+
+    if (result.needsSelection) {
+      // Multiple accounts - show selection dialog
+      this.setState({
+        accountSelectionDialog: true,
+        accounts: result.accounts,
+        oauthState: result.state,
+        oauthVerifier: result.verifier
+      });
+    } else {
+      // Success - single account
+      this.showSnackbar('success', 'Authenticated! Discovering devices...');
+      this.handleDiscover();
+    }
+  };
+
+  handleSelectAccount = async (account) => {
+    this.setState({ accountSelectionDialog: false });
+    this.showSnackbar('info', `Selecting ${account.name}...`);
+
+    const [err] = await this.props.ipc.invoke('selectAccount', {
+      accountHref: account.href,
+      state: this.state.oauthState,
+      verifier: this.state.oauthVerifier
+    });
+
+    if (err) {
+      this.showSnackbar('error', `Selection failed: ${err.message}`);
+    } else {
+      this.showSnackbar('success', 'Authenticated! Discovering devices...');
+      this.handleDiscover();
+    }
+  };
 
   handleAuthenticate = async () => {
     const [err] = await this.props.ipc.invoke('authenticateNintendo', this.state.sessionToken);
@@ -127,29 +181,50 @@ class TabContent extends Component {
           Nintendo Switch Parental Controls
         </Typography>
 
-        {/* Auth Section */}
+        {/* Auth Section - OAuth Flow */}
         {!isAuthenticated && (
           <Box mb={3}>
-            <Typography variant="h6">Authenticate</Typography>
+            <Typography variant="h6">Login to Nintendo Account</Typography>
             <Typography variant="body2" color="textSecondary" paragraph>
-              Get your session token from <a href="https://github.com/samuelthomas2774/nxapi" target="_blank" rel="noopener noreferrer">nxapi-cli</a>
+              Click below to securely login with your Nintendo Account.
+              Your credentials are never stored - only the session token.
             </Typography>
-            <TextField
-              label="Nintendo Session Token"
-              value={this.state.sessionToken}
-              onChange={(e) => this.setState({ sessionToken: e.target.value })}
-              fullWidth
-              margin="normal"
-              type="password"
-            />
             <Button
               variant="contained"
               color="primary"
-              onClick={this.handleAuthenticate}
-              disabled={!this.state.sessionToken}
+              size="large"
+              onClick={this.handleStartOAuth}
+              startIcon={<VideogameAssetIcon />}
+              style={{ marginRight: 10 }}
             >
-              Authenticate & Discover
+              Login with Nintendo
             </Button>
+
+            <Typography variant="caption" color="textSecondary" display="block" style={{ marginTop: 10 }}>
+              Advanced: Have a session token already? <Button size="small" onClick={() => this.setState({ showManualAuth: !this.state.showManualAuth })}>Manual Login</Button>
+            </Typography>
+
+            {this.state.showManualAuth && (
+              <Box mt={2}>
+                <TextField
+                  label="Nintendo Session Token"
+                  value={this.state.sessionToken}
+                  onChange={(e) => this.setState({ sessionToken: e.target.value })}
+                  fullWidth
+                  margin="normal"
+                  type="password"
+                  helperText="Get from npx nxapi nso token --json"
+                />
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={this.handleAuthenticate}
+                  disabled={!this.state.sessionToken}
+                >
+                  Authenticate Manually
+                </Button>
+              </Box>
+            )}
           </Box>
         )}
 
@@ -272,6 +347,38 @@ class TabContent extends Component {
             </TableBody>
           </Table>
         )}
+
+        {/* Account Selection Dialog */}
+        <Dialog
+          open={this.state.accountSelectionDialog}
+          onClose={() => this.setState({ accountSelectionDialog: false })}
+        >
+          <DialogTitle>Select Nintendo Account</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="textSecondary" paragraph>
+              Multiple accounts found. Select the one with parental controls:
+            </Typography>
+            <List>
+              {this.state.accounts.map((account, idx) => (
+                <ListItem
+                  button
+                  key={idx}
+                  onClick={() => this.handleSelectAccount(account)}
+                >
+                  <ListItemText
+                    primary={account.name}
+                    secondary="Click to select this account"
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => this.setState({ accountSelectionDialog: false })}>
+              Cancel
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {/* Snackbar */}
         {this.state.snackbar && (

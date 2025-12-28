@@ -4,7 +4,9 @@ Nintendo Switch Parental Controls integration for Allow2Automate - monitor gamin
 
 ## Features
 
-- ✅ **OAuth Authentication** - Secure Nintendo Account login
+- ✅ **One-Click OAuth Login** - Seamless Nintendo Account authentication
+- ✅ **Automatic Token Extraction** - No manual copying required
+- ✅ **Multi-Account Support** - Select from multiple Nintendo accounts
 - ✅ **Device Discovery** - Auto-detect Nintendo Switch consoles
 - ✅ **Child Account Pairing** - Link Nintendo children to Allow2 children
 - ✅ **Real-time Monitoring** - Track gaming sessions (5-minute polling)
@@ -53,29 +55,33 @@ npm run build
 
 ## Setup
 
-### 1. Get Nintendo Session Token
-
-Use [nxapi-cli](https://github.com/samuelthomas2774/nxapi) to obtain a session token:
-
-```bash
-npx nxapi nso token --json
-```
-
-Copy the `session_token` value.
-
-### 2. Authenticate in Allow2Automate
+### 1. Login to Nintendo Account (Automatic OAuth)
 
 1. Open Allow2Automate
 2. Go to Plugins → Nintendo Switch
-3. Paste your session token
-4. Click "Authenticate & Discover"
+3. Click **"Login with Nintendo"** button
+4. Browser window opens to Nintendo login
+5. Enter your Nintendo Account credentials
+6. **If single account**: Plugin automatically extracts token and closes window
+7. **If multiple accounts**: Select the account with parental controls
 
-### 3. Pair Children
+**That's it!** No manual token copying required.
 
-1. Plugin will discover your Nintendo Switch consoles
-2. Child accounts will appear in the table
+### 2. Pair Children
+
+1. Plugin automatically discovers your Nintendo Switch consoles
+2. Child accounts appear in the table
 3. For each child, select the corresponding Allow2 child from the dropdown
-4. Monitoring will start automatically
+4. Monitoring starts automatically
+
+### Advanced: Manual Token Entry
+
+If you prefer to use a pre-existing session token:
+
+1. Click "Manual Login" in the authentication section
+2. Get token: `npx nxapi nso token --json`
+3. Paste the `session_token` value
+4. Click "Authenticate Manually"
 
 ## How It Works
 
@@ -139,9 +145,10 @@ Mapped to Allow2 activity types for quota tracking.
 
 ### Authentication Failed
 
-- Ensure session token is valid (expires after ~2 years)
-- Re-generate token using `npx nxapi nso token`
-- Check Nintendo Account is linked to Switch console
+- **OAuth flow**: Try closing and reopening the login window
+- **Multiple accounts**: Make sure you select the account with parental controls enabled
+- **Manual token**: Ensure session token is valid (expires after ~2 years)
+- Check Nintendo Account is linked to Switch console via Parental Controls app
 
 ### No Devices Found
 
