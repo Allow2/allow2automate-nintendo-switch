@@ -1,0 +1,28 @@
+{
+  "name": "@allow2/nintendo-switch-api",
+  "version": "1.0.0",
+  "description": "Nintendo Switch Parental Controls API client for Node.js",
+  "main": "dist/index.js",
+  "module": "dist/index.es.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rollup -c",
+    "test": "echo \"No tests yet\""
+  },
+  "keywords": ["nintendo", "switch", "parental-controls", "api"],
+  "author": "Allow2",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.13.8",
+    "@babel/preset-env": "^7.13.9",
+    "@rollup/plugin-babel": "^5.3.0",
+    "@rollup/plugin-commonjs": "^17.1.0",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^11.2.0",
+    "rollup": "^2.40.0"
+  }
+}

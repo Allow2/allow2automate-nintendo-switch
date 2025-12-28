@@ -1,0 +1,67 @@
+{
+  "name": "@allow2/allow2automate-nintendo-switch",
+  "shortName": "nintendo-switch",
+  "version": "1.0.0",
+  "description": "Monitor Nintendo Switch gaming time and sync with Allow2 parental controls",
+  "main": "dist/index.js",
+  "module": "dist/index.es.js",
+  "jsnext:main": "dist/index.es.js",
+  "scripts": {
+    "build:lib": "cd lib/nintendo-switch-api && npm install && npm run build",
+    "build:plugin": "rollup -c",
+    "build": "npm run build:lib && npm run build:plugin",
+    "start": "rollup -c -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Allow2/allow2automate-nintendo-switch"
+  },
+  "allow2Token": "????",
+  "keywords": ["allow2automate", "allow2", "nintendo", "switch", "parental-controls", "gaming"],
+  "author": { "name": "Allow2", "url": "https://allow2.com" },
+  "license": "MIT",
+  "allow2automate": {
+    "plugin": true,
+    "pluginId": "allow2automate-nintendo-switch",
+    "displayName": "Nintendo Switch",
+    "category": "Gaming",
+    "permissions": ["network", "configuration"],
+    "minAppVersion": "2.0.0",
+    "api": {
+      "actions": [
+        {"id": "authenticate", "name": "Authenticate Nintendo Account"},
+        {"id": "disableGaming", "name": "Disable Gaming"},
+        {"id": "enableGaming", "name": "Enable Gaming"}
+      ],
+      "triggers": [
+        {"id": "quotaExhausted", "name": "Quota Exhausted"},
+        {"id": "gamingDetected", "name": "Gaming Started"},
+        {"id": "limitEnforced", "name": "Limit Enforced"}
+      ]
+    }
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.13.9",
+    "@allow2/nintendo-switch-api": "file:./lib/nintendo-switch-api"
+  },
+  "peerDependencies": {
+    "@material-ui/core": "^4.0.0",
+    "@material-ui/icons": "^4.0.0",
+    "@material-ui/lab": "^4.0.0",
+    "react": "^16.0.0 || ^17.0.0",
+    "react-dom": "^16.0.0 || ^17.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.13.8",
+    "@babel/plugin-proposal-class-properties": "^7.0.0",
+    "@babel/plugin-transform-runtime": "^7.13.9",
+    "@babel/preset-env": "^7.13.9",
+    "@babel/preset-react": "^7.12.13",
+    "@rollup/plugin-babel": "^5.3.0",
+    "@rollup/plugin-commonjs": "^17.1.0",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^11.2.0",
+    "rollup": "^2.40.0",
+    "rollup-plugin-peer-deps-external": "^2.2.4"
+  }
+}
