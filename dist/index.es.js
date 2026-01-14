@@ -518,6 +518,14 @@ var TabContent = /*#__PURE__*/function (_Component) {
         while (1) switch (_context.prev = _context.next) {
           case 0:
             _this.showSnackbar('info', 'Opening Nintendo login window...');
+
+            // Clear any previous account selection state
+            _this.setState({
+              accountSelectionDialog: false,
+              accounts: [],
+              oauthState: null,
+              oauthVerifier: null
+            });
             _context.next = 1;
             return _this.props.ipc.invoke('startOAuth');
           case 1:
@@ -532,8 +540,9 @@ var TabContent = /*#__PURE__*/function (_Component) {
             _this.showSnackbar('error', "Login failed: ".concat(err.message));
             return _context.abrupt("return");
           case 2:
-            if (result.needsSelection) {
+            if (result.needsSelection && result.accounts && result.accounts.length > 1) {
               // Multiple accounts - show selection dialog
+              console.log('[TabContent] Multiple accounts detected:', result.accounts.length);
               _this.setState({
                 accountSelectionDialog: true,
                 accounts: result.accounts,
@@ -541,7 +550,7 @@ var TabContent = /*#__PURE__*/function (_Component) {
                 oauthVerifier: result.verifier
               });
             } else {
-              // Success - single account
+              // Success - single account or auto-selected
               _this.showSnackbar('success', 'Authenticated! Discovering devices...');
               _this.handleDiscover();
             }
@@ -949,7 +958,7 @@ var TabContent = /*#__PURE__*/function (_Component) {
         variant: "body2",
         color: "textSecondary",
         paragraph: true
-      }, "Multiple accounts found. Select the one with parental controls:"), /*#__PURE__*/React.createElement(List, null, this.state.accounts.map(function (account, idx) {
+      }, this.state.accounts && this.state.accounts.length > 1 ? 'Multiple accounts found. Select the one with parental controls:' : 'Select the account to link:'), /*#__PURE__*/React.createElement(List, null, this.state.accounts.map(function (account, idx) {
         return /*#__PURE__*/React.createElement(ListItem, {
           button: true,
           key: idx,
@@ -1003,66 +1012,79 @@ var OAuthWindowManager = /*#__PURE__*/function () {
             case 0:
               return _context3.abrupt("return", new Promise(function (resolve, reject) {
                 _this.authWindow = new _this.BrowserWindow({
-                  width: 500,
+                  width: 1250,
                   height: 700,
                   webPreferences: {
                     nodeIntegration: false,
                     contextIsolation: true,
-                    javascript: true
+                    javascript: true,
+                    webSecurity: false // Allow all origins for debugging OAuth
                   },
                   title: 'Login to Nintendo Account',
                   autoHideMenuBar: true
+                });
+
+                // Set User-Agent to match Nintendo Switch Parental Controls app
+                _this.authWindow.webContents.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148');
+
+                // Log any console errors from the page
+                _this.authWindow.webContents.on('console-message', function (event, level, message) {
+                  console.log('[OAuth Browser Console]', message);
                 });
                 var redirectUrl = null;
                 var accounts = [];
                 var oauthState = state;
                 var oauthVerifier = verifier;
                 _this.authWindow.webContents.on('did-finish-load', /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/regenerator.mark(function _callee() {
-                  var result, _t;
+                  var currentUrl, result, _t;
                   return regenerator.wrap(function (_context) {
                     while (1) switch (_context.prev = _context.next) {
                       case 0:
-                        _context.prev = 0;
-                        _context.next = 1;
-                        return _this.authWindow.webContents.executeJavaScript("\n            (function() {\n              const buttons = Array.from(document.querySelectorAll('button, a'))\n                .filter(el => {\n                  const text = el.textContent || '';\n                  const href = el.href || el.getAttribute('href') || '';\n                  return text.includes('Select') ||\n                         text.includes('person') ||\n                         href.includes('npf54789bef');\n                });\n\n              if (buttons.length > 0) {\n                const accountData = buttons.map((btn, idx) => {\n                  const parent = btn.closest('div, li, section');\n                  const nameEl = parent ? parent.querySelector('[class*=\"name\"], [class*=\"user\"], h2, h3, strong') : null;\n                  const name = nameEl ? nameEl.textContent.trim() : 'Account ' + (idx + 1);\n                  const href = btn.href || btn.getAttribute('href') || '';\n\n                  return { name, href, element: idx };\n                });\n\n                return {\n                  found: true,\n                  accounts: accountData,\n                  count: buttons.length\n                };\n              }\n\n              return { found: false };\n            })();\n          ");
-                      case 1:
-                        result = _context.sent;
-                        if (!(result && result.found)) {
-                          _context.next = 4;
-                          break;
-                        }
-                        accounts = result.accounts;
-                        if (!(result.count === 1)) {
-                          _context.next = 3;
-                          break;
-                        }
+                        currentUrl = _this.authWindow.webContents.getURL();
+                        console.log('[OAuth] Page loaded:', currentUrl);
+                        _context.prev = 1;
                         _context.next = 2;
-                        return _this.authWindow.webContents.executeJavaScript("\n                const buttons = Array.from(document.querySelectorAll('button, a'))\n                  .filter(el => {\n                    const text = el.textContent || '';\n                    const href = el.href || el.getAttribute('href') || '';\n                    return text.includes('Select') ||\n                           text.includes('person') ||\n                           href.includes('npf54789bef');\n                  });\n                if (buttons[0]) buttons[0].click();\n              ");
+                        return _this.authWindow.webContents.executeJavaScript("\n            (function() {\n              console.log('[OAuth Script] Checking for account selection buttons...');\n              console.log('[OAuth Script] Current URL:', window.location.href);\n\n              // Only look for buttons with the custom URI scheme and actual session_token_code\n              // This filters out logout buttons that have session_token_code in redirect URLs\n              const buttons = Array.from(document.querySelectorAll('button, a'))\n                .filter(el => {\n                  const href = el.href || el.getAttribute('href') || '';\n                  // Must start with our redirect URI and have session_token_code in hash (not in query params)\n                  return href.startsWith('npf54789befb391a838://auth#') && href.includes('session_token_code=');\n                });\n\n              console.log('[OAuth Script] Found', buttons.length, 'valid account buttons (with session_token_code)');\n\n              if (buttons.length > 0) {\n                const accountData = buttons.map((btn, idx) => {\n                  const href = btn.href || btn.getAttribute('href') || '';\n\n                  // Find account nickname - Nintendo uses c-header-v2_accountInfo_nickname class\n                  let name = null;\n                  const nicknameElement = document.querySelector('.c-header-v2_accountInfo_nickname, p.c-header-v2_accountInfo_nickname');\n                  if (nicknameElement) {\n                    name = nicknameElement.textContent.trim();\n                  }\n\n                  console.log('[OAuth Script] Button', idx, '- name:', name, 'href:', href.substring(0, 50));\n\n                  return {\n                    name: name || `Account ${idx + 1}`,\n                    href,\n                    element: idx\n                  };\n                });\n\n                return {\n                  found: true,\n                  accounts: accountData,\n                  count: buttons.length\n                };\n              }\n\n              return { found: false };\n            })();\n          ");
                       case 2:
+                        result = _context.sent;
+                        console.log('[OAuth] Account check result:', result);
+                        if (result && result.found) {
+                          accounts = result.accounts;
+                          console.log('[OAuth] Found', result.count, 'accounts:', accounts);
+
+                          // Auto-click if single account, otherwise show selection dialog
+                          if (result.count === 1) {
+                            console.log('[OAuth] Single account detected - auto-selecting');
+                            console.log('[OAuth] Navigating to:', accounts[0].href.substring(0, 80));
+
+                            // Navigate directly to the redirect URL instead of clicking
+                            // This is more reliable than clicking a button
+                            _this.authWindow.loadURL(accounts[0].href);
+                          } else if (result.count > 1) {
+                            console.log('[OAuth] Multiple accounts detected:', result.count, '- showing selection dialog');
+                            _this.authWindow.close();
+                            resolve({
+                              accounts: accounts,
+                              needsSelection: true,
+                              state: oauthState,
+                              verifier: oauthVerifier
+                            });
+                          }
+                        }
                         _context.next = 4;
                         break;
                       case 3:
-                        _this.authWindow.close();
-                        resolve({
-                          accounts: accounts,
-                          needsSelection: true,
-                          state: oauthState,
-                          verifier: oauthVerifier
-                        });
+                        _context.prev = 3;
+                        _t = _context["catch"](1);
+                        console.error('[OAuth] Error checking for accounts:', _t);
                       case 4:
-                        _context.next = 6;
-                        break;
-                      case 5:
-                        _context.prev = 5;
-                        _t = _context["catch"](0);
-                        console.error('Error injecting script:', _t);
-                      case 6:
                       case "end":
                         return _context.stop();
                     }
-                  }, _callee, null, [[0, 5]]);
+                  }, _callee, null, [[1, 3]]);
                 })));
                 _this.authWindow.webContents.on('will-redirect', function (event, url) {
+                  console.log('[OAuth] will-redirect:', url.substring(0, 80));
                   if (url.startsWith('npf54789befb391a838://auth')) {
                     event.preventDefault();
                     redirectUrl = url;
@@ -1070,8 +1092,19 @@ var OAuthWindowManager = /*#__PURE__*/function () {
                   }
                 });
                 _this.authWindow.webContents.on('did-navigate', function (event, url) {
+                  console.log('[OAuth] did-navigate:', url.substring(0, 80));
                   if (url.startsWith('npf54789befb391a838://auth')) {
                     redirectUrl = url;
+                    _this.authWindow.close();
+                  }
+                });
+
+                // Handle custom URI scheme navigation failures
+                _this.authWindow.webContents.on('did-fail-load', function (event, errorCode, errorDescription, validatedURL) {
+                  console.log('[OAuth] did-fail-load:', validatedURL.substring(0, 80), 'Error:', errorDescription);
+                  if (validatedURL.startsWith('npf54789befb391a838://auth')) {
+                    console.log('[OAuth] Custom URI detected in failed load - capturing redirect');
+                    redirectUrl = validatedURL;
                     _this.authWindow.close();
                   }
                 });
@@ -1143,7 +1176,7 @@ var OAuthWindowManager = /*#__PURE__*/function () {
             case 0:
               return _context5.abrupt("return", new Promise(function (resolve, reject) {
                 _this2.authWindow = new _this2.BrowserWindow({
-                  width: 500,
+                  width: 1250,
                   height: 700,
                   show: false,
                   webPreferences: {
@@ -1151,8 +1184,12 @@ var OAuthWindowManager = /*#__PURE__*/function () {
                     contextIsolation: true
                   }
                 });
+
+                // Set User-Agent to match Nintendo Switch Parental Controls app
+                _this2.authWindow.webContents.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148');
                 var redirectUrl = null;
                 _this2.authWindow.webContents.on('will-redirect', function (event, url) {
+                  console.log('[OAuth] will-redirect:', url.substring(0, 80));
                   if (url.startsWith('npf54789befb391a838://auth')) {
                     event.preventDefault();
                     redirectUrl = url;
@@ -1160,8 +1197,19 @@ var OAuthWindowManager = /*#__PURE__*/function () {
                   }
                 });
                 _this2.authWindow.webContents.on('did-navigate', function (event, url) {
+                  console.log('[OAuth] did-navigate:', url.substring(0, 80));
                   if (url.startsWith('npf54789befb391a838://auth')) {
                     redirectUrl = url;
+                    _this2.authWindow.close();
+                  }
+                });
+
+                // Handle custom URI scheme navigation failures
+                _this2.authWindow.webContents.on('did-fail-load', function (event, errorCode, errorDescription, validatedURL) {
+                  console.log('[OAuth] did-fail-load:', validatedURL.substring(0, 80), 'Error:', errorDescription);
+                  if (validatedURL.startsWith('npf54789befb391a838://auth')) {
+                    console.log('[OAuth] Custom URI detected in failed load - capturing redirect');
+                    redirectUrl = validatedURL;
                     _this2.authWindow.close();
                   }
                 });
@@ -1730,5 +1778,6 @@ function plugin(context) {
 }
 module.exports = {
   plugin: plugin,
-  TabContent: TabContent
+  TabContent: TabContent,
+  requiresMainProcess: true
 };

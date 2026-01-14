@@ -58,6 +58,14 @@ class TabContent extends Component {
   handleStartOAuth = async () => {
     this.showSnackbar('info', 'Opening Nintendo login window...');
 
+    // Clear any previous account selection state
+    this.setState({
+      accountSelectionDialog: false,
+      accounts: [],
+      oauthState: null,
+      oauthVerifier: null
+    });
+
     const [err, result] = await this.props.ipc.invoke('startOAuth');
 
     if (err) {
@@ -65,8 +73,9 @@ class TabContent extends Component {
       return;
     }
 
-    if (result.needsSelection) {
+    if (result.needsSelection && result.accounts && result.accounts.length > 1) {
       // Multiple accounts - show selection dialog
+      console.log('[TabContent] Multiple accounts detected:', result.accounts.length);
       this.setState({
         accountSelectionDialog: true,
         accounts: result.accounts,
@@ -74,7 +83,7 @@ class TabContent extends Component {
         oauthVerifier: result.verifier
       });
     } else {
-      // Success - single account
+      // Success - single account or auto-selected
       this.showSnackbar('success', 'Authenticated! Discovering devices...');
       this.handleDiscover();
     }
@@ -356,7 +365,9 @@ class TabContent extends Component {
           <DialogTitle>Select Nintendo Account</DialogTitle>
           <DialogContent>
             <Typography variant="body2" color="textSecondary" paragraph>
-              Multiple accounts found. Select the one with parental controls:
+              {this.state.accounts && this.state.accounts.length > 1
+                ? 'Multiple accounts found. Select the one with parental controls:'
+                : 'Select the account to link:'}
             </Typography>
             <List>
               {this.state.accounts.map((account, idx) => (

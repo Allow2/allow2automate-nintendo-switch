@@ -269,4 +269,8 @@ function plugin(context) {
   return nintendo;
 }
 
-module.exports = { plugin, TabContent };
+module.exports = {
+  plugin,
+  TabContent,
+  requiresMainProcess: true
+};
